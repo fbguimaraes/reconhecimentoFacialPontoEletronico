@@ -2,11 +2,35 @@
 
 Sistema completo de controle de ponto eletrônico baseado em reconhecimento facial usando **MediaPipe FaceLandmarker**, **OpenCV**, **Django REST Framework** e interface desktop com **Tkinter**.
 
-> **🚀 COMEÇANDO AGORA?** Veja o [Guia de Instalação Completo](INSTALLATION.md) para instruções passo a passo de como rodar o sistema após clonar o repositório.
+---
+
+## 🎯 Início Rápido
+
+**Acabou de clonar o repositório?** Escolha sua opção:
+
+### 🤖 **Opção 1: CONFIGURAÇÃO AUTOMÁTICA** (Recomendado)
+Use o GitHub Copilot para configurar tudo automaticamente!
+
+👉 **[PROMPT_CONFIGURACAO_AUTO.md](PROMPT_CONFIGURACAO_AUTO.md)** ⭐
+
+Copie o prompt e cole no Copilot - ele fará toda a configuração para você!
+
+### 📖 **Opção 2: Configuração Manual**
+Prefere fazer passo a passo? 
+
+👉 **[INSTALLATION.md](INSTALLATION.md)** - Guia completo detalhado
+
+### ⚡ **Opção 3: Comandos Rápidos**
+
+👉 **[QUICKSTART_CLONE.md](QUICKSTART_CLONE.md)** - 5 minutos para rodar
+
+---
 
 ## 📋 Índice
 
-- [🚀 Instalação Completa](INSTALLATION.md) ← **Comece aqui!**
+- [🤖 Configuração Automática](PROMPT_CONFIGURACAO_AUTO.md) ← **Mais fácil!**
+- [🚀 Instalação Manual](INSTALLATION.md) ← **Passo a passo**
+- [⚡ Quick Start](QUICKSTART_CLONE.md) ← **5 minutos**
 - [Visão Geral](#visão-geral)
 - [Requisitos](#requisitos)
 - [Instalação Rápida](#instalação-rápida)
