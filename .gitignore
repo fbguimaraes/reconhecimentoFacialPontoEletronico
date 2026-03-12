@@ -37,6 +37,13 @@ build/
 dist/
 dist_release/
 
+# Arquivos de release/distribuição grandes
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.exe
+
 # IDEs
 .vscode/
 .idea/
