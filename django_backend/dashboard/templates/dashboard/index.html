@@ -1,0 +1,231 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard - Sistema de Reconhecimento Facial{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-speedometer2"></i> Dashboard Principal</h1>
+    <span class="text-muted">Atualizado em tempo real</span>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card primary">
+            <p class="stat-label">Total de Funcionários</p>
+            <p class="stat-value text-primary">{{ total_employees }}</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card success">
+            <p class="stat-label">Presentes Hoje</p>
+            <p class="stat-value text-success">{{ employees_present }}</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card warning">
+            <p class="stat-label">Sem Saída</p>
+            <p class="stat-value text-warning">{{ employees_entered }}</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card danger">
+            <p class="stat-label">Finalizaram</p>
+            <p class="stat-value" style="color: var(--success-color);">{{ employees_exited }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row mb-4">
+    <div class="col-md-8 mb-3">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-graph-up"></i> Registros dos Últimos 7 Dias</h5>
+            <canvas id="weekChart" height="80"></canvas>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-trophy"></i> Top 5 Funcionários (Mês)</h5>
+            <canvas id="topEmployeesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico do Mês -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-calendar3"></i> Registros do Mês Atual</h5>
+            <canvas id="monthChart" height="60"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Últimos Registros -->
+<div class="row">
+    <div class="col-12">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-clock-history"></i> Últimos Registros</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Data</th>
+                            <th>Entrada</th>
+                            <th>Saída</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                        <tr>
+                            <td>
+                                <strong>{{ log.employee.name }}</strong><br>
+                                <small class="text-muted">{{ log.employee.emp_id }}</small>
+                            </td>
+                            <td>{{ log.date|date:"d/m/Y" }}</td>
+                            <td>{{ log.entry_time|time:"H:i" }}</td>
+                            <td>
+                                {% if log.exit_time %}
+                                    {{ log.exit_time|time:"H:i" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.exit_time %}
+                                    <span class="badge bg-success badge-status">Completo</span>
+                                {% else %}
+                                    <span class="badge bg-warning badge-status">Pendente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Nenhum registro encontrado</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <a href="{% url 'dashboard:logs' %}" class="btn btn-outline-primary btn-sm mt-2">
+                Ver todos os registros <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Dados da semana
+    const weekData = {{ week_data|safe }};
+    const weekLabels = weekData.map(d => d.date);
+    const weekCounts = weekData.map(d => d.count);
+    
+    // Gráfico da semana
+    new Chart(document.getElementById('weekChart'), {
+        type: 'line',
+        data: {
+            labels: weekLabels,
+            datasets: [{
+                label: 'Registros',
+                data: weekCounts,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Dados do mês
+    const monthData = {{ month_data|safe }};
+    const monthLabels = monthData.map(d => d.date);
+    const monthCounts = monthData.map(d => d.count);
+    
+    // Gráfico do mês
+    new Chart(document.getElementById('monthChart'), {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: 'Registros por Dia',
+                data: monthCounts,
+                backgroundColor: '#27ae60',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Top funcionários
+    const topEmployees = {{ top_employees|safe }};
+    const topEmployeeNames = topEmployees.map(e => e.employee__name);
+    const topEmployeeCounts = topEmployees.map(e => e.count);
+    
+    // Gráfico top funcionários
+    new Chart(document.getElementById('topEmployeesChart'), {
+        type: 'doughnut',
+        data: {
+            labels: topEmployeeNames,
+            datasets: [{
+                data: topEmployeeCounts,
+                backgroundColor: [
+                    '#3498db',
+                    '#27ae60',
+                    '#f39c12',
+                    '#e74c3c',
+                    '#9b59b6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

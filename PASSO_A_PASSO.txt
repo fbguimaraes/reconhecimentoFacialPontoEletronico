@@ -1,0 +1,238 @@
+================================================================
+PASSO A PASSO - SISTEMA DE RECONHECIMENTO FACIAL COM DJANGO
+================================================================
+
+SETUP INICIAL (Execute uma unica vez)
+================================================================
+
+PASSO 1: Ativar ambiente virtual
+---------------------------------
+.\env\Scripts\Activate.ps1
+
+
+PASSO 2: Instalar dependencias do Django
+-----------------------------------------
+cd django_backend
+pip install -r requirements.txt
+cd ..
+
+
+PASSO 3: Criar banco de dados
+------------------------------
+cd django_backend
+python manage.py makemigrations
+python manage.py migrate
+cd ..
+
+
+PASSO 4: Criar superusuario (admin)
+------------------------------------
+cd django_backend
+python manage.py createsuperuser
+
+Preencha:
+- Username: admin
+- Email: admin@example.com
+- Password: (escolha uma senha)
+
+cd ..
+
+
+PASSO 5 (OPCIONAL): Migrar dados antigos
+-----------------------------------------
+Se voce tem dados em data/embeddings.pkl e data/registros.csv:
+
+1. Abra um SEGUNDO terminal
+2. Inicie o Django:
+   cd django_backend
+   python manage.py runserver
+
+3. No primeiro terminal:
+   python migrate_to_django.py
+
+4. Migrar logs:
+   cd django_backend
+   python manage.py shell
+   (Cole o conteudo de migrate_logs.py e execute)
+
+
+================================================================
+USAR O SISTEMA (Execute sempre que quiser usar)
+================================================================
+
+TERMINAL 1: Iniciar servidor Django
+------------------------------------
+cd django_backend
+python manage.py runserver
+
+OU use o script:
+.\start_django.ps1
+
+Servidor vai rodar em:
+- Dashboard: http://localhost:8000/
+- Admin:     http://localhost:8000/admin/
+- API:       http://localhost:8000/api/
+
+
+TERMINAL 2: Iniciar reconhecimento facial
+------------------------------------------
+python main.py
+
+OU use o script:
+.\start_facial_recognition.ps1
+
+
+================================================================
+CONFIGURAR PARA USAR API DJANGO (RECOMENDADO)
+================================================================
+
+Edite o arquivo: main.py
+
+Linha 18, trocar:
+  from face_engine import FaceEngine
+
+Por:
+  from face_engine_api import FaceEngine
+
+
+================================================================
+ESTRUTURA DO SISTEMA
+================================================================
+
+reconhecimento_facial/
+├── django_backend/          # Backend com Django
+│   ├── config/             # Configuracoes
+│   ├── employees/          # App de API
+│   ├── dashboard/          # App de dashboard
+│   └── manage.py
+│
+├── face_engine.py          # Motor (modo CSV/Pickle)
+├── face_engine_api.py      # Motor (modo API Django)
+├── main.py                 # Interface Tkinter
+│
+└── data/                   # Dados (modo legado)
+
+
+================================================================
+ACESSAR O DASHBOARD
+================================================================
+
+Abra o navegador em:
+
+http://localhost:8000/
+
+Voce vera:
+- Estatisticas em tempo real
+- Graficos de presenca
+- Lista de funcionarios
+- Registros de ponto
+- Relatorios
+
+
+================================================================
+ACESSAR O ADMIN PANEL
+================================================================
+
+http://localhost:8000/admin/
+
+Login:
+- Usuario: admin
+- Senha: (a que voce criou)
+
+No admin voce pode:
+- Adicionar/editar funcionarios
+- Ver/editar registros de ponto
+- Gerenciar embeddings faciais
+
+
+================================================================
+USAR A API REST
+================================================================
+
+API Browsable (interface web):
+http://localhost:8000/api/
+
+Principais endpoints:
+
+GET  /api/employees/              # Listar funcionarios
+POST /api/employees/              # Criar funcionario
+GET  /api/employees/1/            # Detalhes
+GET  /api/employees/1/logs/       # Logs do funcionario
+
+GET  /api/logs/                   # Listar registros
+GET  /api/logs/today/             # Logs de hoje
+GET  /api/logs/pending/           # Sem saida
+
+POST /api/recognize/              # Reconhecer rosto
+POST /api/register-employee/      # Cadastrar com foto
+POST /api/register-log/           # Registrar entrada/saida
+
+GET  /api/dashboard/stats/        # Estatisticas
+
+
+================================================================
+INTEGRAR COM BITDOGLAB (MQTT)
+================================================================
+
+1. Instalar MQTT:
+   pip install paho-mqtt
+
+2. Instalar broker Mosquitto:
+   Download: https://mosquitto.org/download/
+
+3. Editar bitdoglab_mqtt_subscriber.py:
+   - Configurar WIFI_SSID
+   - Configurar WIFI_PASSWORD
+   - Configurar MQTT_BROKER (IP do PC)
+
+4. Upload para BitDogLab usando Thonny IDE
+
+5. Integrar no face_engine_api.py:
+   Ver instrucoes em mqtt_integration.py
+
+
+================================================================
+TROUBLESHOOTING
+================================================================
+
+Erro: "Nao foi possivel conectar a API"
+----------------------------------------
+1. Verifique se Django esta rodando
+2. Acesse http://localhost:8000/api/
+3. Veja erros no terminal do Django
+
+
+Erro: "No module named Django"
+-------------------------------
+1. Ative o ambiente virtual
+2. Instale: pip install -r django_backend/requirements.txt
+
+
+Erro: "Table doesn't exist"
+---------------------------
+Execute as migracoes:
+cd django_backend
+python manage.py migrate
+
+
+Dashboard nao mostra dados
+---------------------------
+1. Cadastre funcionarios via Admin
+2. Faca alguns registros de entrada/saida
+3. Recarregue a pagina
+
+
+================================================================
+PARAR O SISTEMA
+================================================================
+
+Para parar o Django:
+- Pressione Ctrl+C no terminal
+
+Para parar a interface Tkinter:
+- Feche a janela
+
+
+================================================================
+FIM DO GUIA
+================================================================

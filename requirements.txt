@@ -1,0 +1,21 @@
+opencv-python>=4.8.0
+mediapipe>=0.10.9
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# Django Framework
+Django>=4.2.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+
+# HTTP
+requests>=2.32.0
+
+# Build para .exe
+pyinstaller>=6.0.0
+
+# Produção (opcional)
+gunicorn>=23.0.0
+waitress>=3.0.0
+psycopg2-binary>=2.9.0
+django-redis>=5.4.0

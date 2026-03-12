@@ -1,0 +1,27 @@
+# ========================================
+# EXEMPLO DE ARQUIVO DE CONFIGURAÇÃO
+# ========================================
+# 
+# Copie este arquivo para "config.ini" e ajuste os valores
+# conforme sua necessidade.
+#
+
+[API]
+# URL base do servidor Django
+BASE_URL = http://localhost:8000/api
+# Timeout em segundos para requisições HTTP
+TIMEOUT = 5
+
+[CAMERA]
+# Índice da câmera (0 = padrão, 1 = segunda câmera, etc.)
+CAMERA_INDEX = 0
+# Resolução da captura
+WIDTH = 640
+HEIGHT = 480
+
+[RECOGNITION]
+# Limiar de confiança para reconhecimento (0.0 a 1.0)
+# Valores menores = mais permissivo, maiores = mais restritivo
+THRESHOLD = 0.40
+# Número de frames para captura durante cadastro
+CAPTURE_FRAMES = 10

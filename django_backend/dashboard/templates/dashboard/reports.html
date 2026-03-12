@@ -1,0 +1,129 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Relatórios - Sistema de Reconhecimento Facial{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-graph-up"></i> Relatórios e Análises</h1>
+
+<!-- Estatísticas Gerais -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card primary">
+            <p class="stat-label">Total de Registros (Mês)</p>
+            <p class="stat-value text-primary">{{ total_logs }}</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card success">
+            <p class="stat-label">Total de Horas (Mês)</p>
+            <p class="stat-value text-success">{{ total_hours }}h</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card warning">
+            <p class="stat-label">Dias Trabalhados</p>
+            <p class="stat-value text-warning">{{ working_days }}</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card danger">
+            <p class="stat-label">Média Horas/Dia</p>
+            <p class="stat-value text-info">{{ avg_hours_per_day }}h</p>
+        </div>
+    </div>
+</div>
+
+<!-- Período do Relatório -->
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> 
+    <strong>Período:</strong> {{ month_start|date:"d/m/Y" }} até hoje
+</div>
+
+<!-- Top 10 Funcionários por Horas -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-award"></i> Top 10 Funcionários - Horas Trabalhadas</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Funcionário</th>
+                            <th>Horas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, hours in employee_hours %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ name }}</td>
+                            <td><strong>{{ hours|floatformat:2 }}h</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Sem dados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dias com Mais Registros -->
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-calendar-event"></i> Dias com Mais Registros</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Registros</th>
+                            <th>Gráfico</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in days_count %}
+                        <tr>
+                            <td>{{ day.date|date:"d/m/Y (D)" }}</td>
+                            <td><strong>{{ day.count }}</strong></td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: {{ day.count }}%"
+                                         role="progressbar">
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Sem dados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exportar Relatório -->
+<div class="card p-3">
+    <h5 class="card-title"><i class="bi bi-download"></i> Exportar Relatório</h5>
+    <p class="text-muted">Use a API para exportar dados em formato JSON</p>
+    <div class="d-flex gap-2">
+        <a href="/api/logs/?format=json" class="btn btn-outline-primary" target="_blank">
+            <i class="bi bi-file-earmark-code"></i> Exportar JSON
+        </a>
+        <a href="/api/employees/?format=json" class="btn btn-outline-success" target="_blank">
+            <i class="bi bi-people"></i> Funcionários JSON
+        </a>
+        <a href="/admin/" class="btn btn-outline-secondary" target="_blank">
+            <i class="bi bi-gear"></i> Admin Panel
+        </a>
+    </div>
+</div>
+{% endblock %}

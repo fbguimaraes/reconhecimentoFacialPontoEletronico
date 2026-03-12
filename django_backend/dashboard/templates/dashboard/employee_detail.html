@@ -1,0 +1,177 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ employee.name }} - Detalhes do Funcionário{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard:employees' %}">Funcionários</a></li>
+        <li class="breadcrumb-item active">{{ employee.name }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h2><i class="bi bi-person-circle"></i> {{ employee.name }}</h2>
+            <p class="text-muted mb-0"><strong>ID:</strong> {{ employee.emp_id }}</p>
+            {% if employee.department %}
+            <p class="text-muted mb-0"><strong>Departamento:</strong> {{ employee.department }}</p>
+            {% endif %}
+            {% if employee.position %}
+            <p class="text-muted mb-0"><strong>Cargo:</strong> {{ employee.position }}</p>
+            {% endif %}
+            <p class="text-muted"><strong>Cadastrado em:</strong> {{ employee.created_at|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 text-center">
+            <p class="stat-label">Status Atual</p>
+            <p class="h3">
+                {% if status == 'absent' %}
+                    <span class="badge bg-secondary badge-status">Ausente</span>
+                {% elif status == 'entered' %}
+                    <span class="badge bg-warning badge-status">Presente</span>
+                {% else %}
+                    <span class="badge bg-success badge-status">Saiu</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card primary">
+            <p class="stat-label">Total de Horas (Mês)</p>
+            <p class="stat-value text-primary">{{ total_hours }}h</p>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card success">
+            <p class="stat-label">Dias Trabalhados (Mês)</p>
+            <p class="stat-value text-success">{{ total_days }}</p>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card warning">
+            <p class="stat-label">Média de Horas/Dia</p>
+            <p class="stat-value text-warning">
+                {% if total_days > 0 %}
+                    {{ total_hours|floatformat:1 }}h
+                {% else %}
+                    0h
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de presença -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-calendar-check"></i> Presença - Últimos 30 Dias</h5>
+            <canvas id="presenceChart" height="60"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de registros -->
+<div class="row">
+    <div class="col-12">
+        <div class="card p-3">
+            <h5 class="card-title"><i class="bi bi-clock-history"></i> Registros do Mês Atual</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Entrada</th>
+                            <th>Saída</th>
+                            <th>Horas Trabalhadas</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in month_logs %}
+                        <tr>
+                            <td>{{ log.date|date:"d/m/Y (D)" }}</td>
+                            <td>{{ log.entry_time|time:"H:i" }}</td>
+                            <td>
+                                {% if log.exit_time %}
+                                    {{ log.exit_time|time:"H:i" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.get_worked_hours %}
+                                    {{ log.get_worked_hours|floatformat:2 }}h
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.exit_time %}
+                                    <span class="badge bg-success badge-status">Completo</span>
+                                {% else %}
+                                    <span class="badge bg-warning badge-status">Pendente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Nenhum registro no mês atual</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const presenceData = {{ presence_data|safe }};
+    const labels = presenceData.map(d => d.date);
+    const data = presenceData.map(d => d.present);
+    
+    new Chart(document.getElementById('presenceChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Presente',
+                data: data,
+                backgroundColor: data.map(v => v === 1 ? '#27ae60' : '#e74c3c'),
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value === 1 ? 'Sim' : 'Não';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
