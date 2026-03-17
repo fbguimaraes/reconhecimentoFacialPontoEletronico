@@ -11,21 +11,17 @@ class EmployeeSerializer(serializers.ModelSerializer):
     """Serializer para modelo Employee."""
     
     today_status = serializers.SerializerMethodField()
-    total_hours_month = serializers.SerializerMethodField()
     
     class Meta:
         model = Employee
         fields = [
-            'id', 'emp_id', 'name', 'department', 'position',
-            'is_active', 'created_at', 'today_status', 'total_hours_month'
+            'id', 'emp_id', 'name', 'department',
+            'is_active', 'created_at', 'today_status'
         ]
         read_only_fields = ['id', 'created_at']
     
     def get_today_status(self, obj):
         return obj.get_today_status()
-    
-    def get_total_hours_month(self, obj):
-        return round(obj.get_total_hours_month(), 2)
 
 
 class FaceEmbeddingSerializer(serializers.ModelSerializer):
@@ -75,25 +71,18 @@ class TimeLogSerializer(serializers.ModelSerializer):
     
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     employee_emp_id = serializers.CharField(source='employee.emp_id', read_only=True)
-    worked_hours = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
+    horario_fmt = serializers.SerializerMethodField()
     
     class Meta:
         model = TimeLog
         fields = [
             'id', 'employee', 'employee_name', 'employee_emp_id',
-            'date', 'entry_time', 'exit_time', 
-            'entry_confidence', 'exit_confidence',
-            'worked_hours', 'status', 'created_at', 'updated_at'
+            'tipo', 'horario', 'horario_fmt', 'data', 'confidence', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'horario', 'data', 'created_at']
     
-    def get_worked_hours(self, obj):
-        hours = obj.get_worked_hours()
-        return round(hours, 2) if hours else None
-    
-    def get_status(self, obj):
-        return obj.get_status()
+    def get_horario_fmt(self, obj):
+        return obj.horario.strftime('%d/%m/%Y %H:%M:%S')
 
 
 class RecognitionRequestSerializer(serializers.Serializer):
@@ -137,7 +126,6 @@ class EmployeeRegistrationSerializer(serializers.Serializer):
     emp_id = serializers.CharField(max_length=50)
     name = serializers.CharField(max_length=200)
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    position = serializers.CharField(max_length=100, required=False, allow_blank=True)
     embeddings = serializers.ListField(
         child=serializers.ListField(child=serializers.FloatField()),
         help_text="Lista de embeddings capturados (múltiplos frames)"

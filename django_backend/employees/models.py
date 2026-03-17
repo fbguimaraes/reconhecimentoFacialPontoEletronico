@@ -5,7 +5,6 @@ from django.db import models
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
 import pickle
-import base64
 
 
 class Employee(models.Model):
@@ -37,12 +36,6 @@ class Employee(models.Model):
         null=True,
         verbose_name="Departamento"
     )
-    position = models.CharField(
-        max_length=100, 
-        blank=True, 
-        null=True,
-        verbose_name="Cargo"
-    )
     
     class Meta:
         verbose_name = "Funcionário"
@@ -58,41 +51,15 @@ class Employee(models.Model):
     
     def get_today_status(self):
         """Retorna o status do funcionário no dia atual."""
-        today = timezone.now().date()
-        log = TimeLog.objects.filter(
-            employee=self, 
-            date=today
-        ).first()
-        
-        if not log:
-            return "absent"
-        if log.exit_time:
-            return "exited"
-        return "entered"
-    
-    def get_total_hours_month(self, year=None, month=None):
-        """Calcula total de horas trabalhadas no mês."""
-        if year is None:
-            year = timezone.now().year
-        if month is None:
-            month = timezone.now().month
-        
-        logs = TimeLog.objects.filter(
+        today = timezone.localdate()
+        ultimo = TimeLog.objects.filter(
             employee=self,
-            date__year=year,
-            date__month=month,
-            exit_time__isnull=False
-        )
+            data=today
+        ).order_by('-horario').first()
         
-        total_seconds = 0
-        for log in logs:
-            if log.entry_time and log.exit_time:
-                entry_datetime = timezone.datetime.combine(log.date, log.entry_time)
-                exit_datetime = timezone.datetime.combine(log.date, log.exit_time)
-                delta = exit_datetime - entry_datetime
-                total_seconds += delta.total_seconds()
-        
-        return total_seconds / 3600  # Retorna em horas
+        if not ultimo:
+            return "absent"
+        return ultimo.tipo
 
 
 class FaceEmbedding(models.Model):
@@ -134,7 +101,12 @@ class FaceEmbedding(models.Model):
 
 
 class TimeLog(models.Model):
-    """Registro de entrada e saída de funcionários."""
+    """Registro de ponto por evento discreto (entrada ou saída)."""
+
+    TIPO_CHOICES = [
+        ('entrada', 'Entrada'),
+        ('saida', 'Saída'),
+    ]
     
     employee = models.ForeignKey(
         Employee, 
@@ -142,62 +114,43 @@ class TimeLog(models.Model):
         related_name='time_logs',
         verbose_name="Funcionário"
     )
-    date = models.DateField(
-        verbose_name="Data"
+    tipo = models.CharField(
+        max_length=10,
+        choices=TIPO_CHOICES,
+        verbose_name="Tipo"
     )
-    entry_time = models.TimeField(
-        verbose_name="Horário de Entrada"
+    horario = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Horário"
     )
-    exit_time = models.TimeField(
-        blank=True, 
-        null=True,
-        verbose_name="Horário de Saída"
-    )
-    entry_confidence = models.FloatField(
-        default=0.0,
-        verbose_name="Confiança da Entrada",
-        help_text="Score de similaridade do reconhecimento facial na entrada"
-    )
-    exit_confidence = models.FloatField(
+    data = models.DateField(
         blank=True,
         null=True,
-        verbose_name="Confiança da Saída",
-        help_text="Score de similaridade do reconhecimento facial na saída"
+        verbose_name="Data"
+    )
+    confidence = models.FloatField(
+        default=0.0,
+        verbose_name="Confiança",
+        help_text="Score de similaridade do reconhecimento facial"
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Criado em"
     )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Atualizado em"
-    )
     
     class Meta:
         verbose_name = "Registro de Ponto"
         verbose_name_plural = "Registros de Ponto"
-        ordering = ['-date', '-entry_time']
-        unique_together = ['employee', 'date']
+        ordering = ['-horario']
         indexes = [
-            models.Index(fields=['date']),
-            models.Index(fields=['employee', 'date']),
+            models.Index(fields=['data']),
+            models.Index(fields=['employee', 'data']),
         ]
+
+    def save(self, *args, **kwargs):
+        if not self.data:
+            self.data = timezone.localdate()
+        super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.employee.name} - {self.date} ({self.entry_time})"
-    
-    def get_worked_hours(self):
-        """Retorna as horas trabalhadas neste registro."""
-        if not self.exit_time:
-            return None
-        
-        entry_datetime = timezone.datetime.combine(self.date, self.entry_time)
-        exit_datetime = timezone.datetime.combine(self.date, self.exit_time)
-        delta = exit_datetime - entry_datetime
-        return delta.total_seconds() / 3600  # Retorna em horas
-    
-    def get_status(self):
-        """Retorna o status do registro."""
-        if self.exit_time:
-            return "Completo"
-        return "Pendente (sem saída)"
+        return f"{self.employee.name} - {self.tipo} - {self.horario.strftime('%d/%m/%Y %H:%M')}"

@@ -1,20 +1,32 @@
-"""
-Django settings for reconhecimento_facial backend project.
-"""
+"""Django settings for reconhecimento_facial backend project."""
 
 import os
+import importlib
 from pathlib import Path
+
+try:
+    dj_database_url = importlib.import_module('dj_database_url')
+except ImportError:  # fallback local até dependência ser instalada
+    dj_database_url = None
+
+try:
+    _dotenv = importlib.import_module('dotenv')
+    load_dotenv = _dotenv.load_dotenv
+except ImportError:  # fallback local até dependência ser instalada
+    def load_dotenv(*args, **kwargs):
+        return False
+
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1234567890-change-in-production-abcdefghijklmnopqrstuvwxyz'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-insecure-key-change-in-production')
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*', '192.168.1.3', '192.168.1.5']
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_ENV.split(',') if h.strip()]
 
 # Application definition
 INSTALLED_APPS = [
@@ -24,11 +36,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third party apps
     'rest_framework',
     'corsheaders',
-    
+
     # Local apps
     'employees',
     'dashboard',
@@ -36,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -66,12 +79,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if dj_database_url:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+            conn_max_age=600,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -99,6 +120,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
@@ -120,10 +142,15 @@ REST_FRAMEWORK = {
     ],
 }
 
-# CORS settings (permitir acesso da aplicação Tkinter)
-CORS_ALLOW_ALL_ORIGINS = True  # Em produção, especificar origens permitidas
+# CORS
+CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000').split(',') if origin.strip()
+]
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
 # Configurações de sessão
 SESSION_COOKIE_AGE = 86400  # 24 horas
+
+
 

@@ -1,9 +1,11 @@
 """
 Views do Dashboard - Interface web para visualização de dados.
 """
+import csv
 from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Max
 from datetime import datetime, timedelta
 from employees.models import Employee, TimeLog
 
@@ -11,26 +13,34 @@ from employees.models import Employee, TimeLog
 def index(request):
     """Dashboard principal com estatísticas gerais."""
     
-    today = timezone.now().date()
+    today = timezone.localdate()
     
     # Estatísticas gerais
     total_employees = Employee.objects.filter(is_active=True).count()
     
-    # Logs de hoje
-    today_logs = TimeLog.objects.filter(date=today).select_related('employee')
-    employees_present = today_logs.count()
-    employees_entered = today_logs.filter(exit_time__isnull=True).count()
-    employees_exited = today_logs.filter(exit_time__isnull=False).count()
+    # Funcionários que registraram algo hoje
+    today_logs = TimeLog.objects.filter(data=today).select_related('employee')
+    employees_present = today_logs.values('employee').distinct().count()
+
+    # Último registro de cada funcionário hoje
+    ultimos = TimeLog.objects.filter(data=today).values('employee').annotate(
+        ultimo_id=Max('id')
+    )
+    ultimos_ids = [registro['ultimo_id'] for registro in ultimos]
+    ultimos_logs = TimeLog.objects.filter(id__in=ultimos_ids)
+
+    employees_entered = ultimos_logs.filter(tipo='entrada').count()
+    employees_exited = ultimos_logs.filter(tipo='saida').count()
     
     # Últimos registros
-    recent_logs = TimeLog.objects.select_related('employee').order_by('-date', '-entry_time')[:10]
+    recent_logs = TimeLog.objects.select_related('employee').order_by('-horario')[:10]
     
     # Logs da semana (para gráfico)
     week_start = today - timedelta(days=6)
     week_data = []
     for i in range(7):
         day = week_start + timedelta(days=i)
-        count = TimeLog.objects.filter(date=day).count()
+        count = TimeLog.objects.filter(data=day).count()
         week_data.append({
             'date': day.strftime('%d/%m'),
             'count': count
@@ -39,21 +49,21 @@ def index(request):
     # Logs do mês (por dia)
     month_start = today.replace(day=1)
     month_logs = TimeLog.objects.filter(
-        date__gte=month_start,
-        date__lte=today
-    ).values('date').annotate(count=Count('id')).order_by('date')
+        data__gte=month_start,
+        data__lte=today
+    ).values('data').annotate(count=Count('id')).order_by('data')
     
     month_data = []
     for log in month_logs:
         month_data.append({
-            'date': log['date'].strftime('%d/%m'),
+            'date': log['data'].strftime('%d/%m'),
             'count': log['count']
         })
     
     # Top 5 funcionários mais presentes no mês
     top_employees = TimeLog.objects.filter(
-        date__gte=month_start,
-        date__lte=today
+        data__gte=month_start,
+        data__lte=today
     ).values('employee__name').annotate(
         count=Count('id')
     ).order_by('-count')[:5]
@@ -78,17 +88,15 @@ def employees_list(request):
     employees = Employee.objects.filter(is_active=True).order_by('name')
     
     # Adicionar informações de hoje para cada funcionário
-    today = timezone.now().date()
     employees_data = []
     
     for emp in employees:
         status = emp.get_today_status()
-        total_hours = emp.get_total_hours_month()
         
         employees_data.append({
             'employee': emp,
             'status': status,
-            'total_hours_month': round(total_hours, 2)
+            'total_hours_month': 0.0
         })
     
     context = {
@@ -103,36 +111,29 @@ def employee_detail(request, pk):
     
     employee = get_object_or_404(Employee, pk=pk)
     
-    today = timezone.now().date()
+    today = timezone.localdate()
     month_start = today.replace(day=1)
     
     # Logs do mês atual
     month_logs = TimeLog.objects.filter(
         employee=employee,
-        date__gte=month_start,
-        date__lte=today
-    ).order_by('-date')
-    
-    # Calcular total de horas
-    total_hours = 0
-    for log in month_logs:
-        hours = log.get_worked_hours()
-        if hours:
-            total_hours += hours
+        data__gte=month_start,
+        data__lte=today
+    ).order_by('-horario')
     
     # Últimos 30 dias de registro
     last_30_days = today - timedelta(days=29)
     logs_30_days = TimeLog.objects.filter(
         employee=employee,
-        date__gte=last_30_days,
-        date__lte=today
-    ).order_by('date')
+        data__gte=last_30_days,
+        data__lte=today
+    ).order_by('data')
     
     # Dados para gráfico de presença
     presence_data = []
     for i in range(30):
         day = last_30_days + timedelta(days=i)
-        has_log = logs_30_days.filter(date=day).exists()
+        has_log = logs_30_days.filter(data=day).exists()
         presence_data.append({
             'date': day.strftime('%d/%m'),
             'present': 1 if has_log else 0
@@ -142,8 +143,8 @@ def employee_detail(request, pk):
         'employee': employee,
         'status': employee.get_today_status(),
         'month_logs': month_logs,
-        'total_hours': round(total_hours, 2),
-        'total_days': month_logs.count(),
+        'total_events': month_logs.count(),
+        'total_days': month_logs.values('data').distinct().count(),
         'presence_data': presence_data,
     }
     
@@ -152,58 +153,85 @@ def employee_detail(request, pk):
 
 def logs_list(request):
     """Lista de todos os registros de ponto."""
-    
-    # Filtros
-    date_from = request.GET.get('date_from', None)
-    date_to = request.GET.get('date_to', None)
-    employee_id = request.GET.get('employee_id', None)
-    
-    logs = TimeLog.objects.select_related('employee').order_by('-date', '-entry_time')
-    
+
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    emp_id = request.GET.get('employee_id')
+
+    logs = TimeLog.objects.select_related('employee').order_by('-horario')
+
     if date_from:
-        logs = logs.filter(date__gte=date_from)
+        logs = logs.filter(data__gte=date_from)
     if date_to:
-        logs = logs.filter(date__lte=date_to)
-    if employee_id:
-        logs = logs.filter(employee_id=employee_id)
-    
-    # Paginação simples: últimos 100 registros
-    logs = logs[:100]
-    
+        logs = logs.filter(data__lte=date_to)
+    if emp_id:
+        logs = logs.filter(employee__id=emp_id)
+
     employees = Employee.objects.filter(is_active=True).order_by('name')
-    
+
     context = {
-        'logs': logs,
+        'logs': logs[:200],
         'employees': employees,
-        'date_from': date_from,
-        'date_to': date_to,
-        'employee_id': employee_id,
+        'date_from': date_from or '',
+        'date_to': date_to or '',
+        'selected_employee': emp_id or '',
     }
-    
+
     return render(request, 'dashboard/logs.html', context)
+
+
+def export_csv(request):
+    """Exporta registros filtrados em CSV."""
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    emp_id = request.GET.get('employee_id')
+
+    logs = TimeLog.objects.select_related('employee').order_by('-horario')
+    if date_from:
+        logs = logs.filter(data__gte=date_from)
+    if date_to:
+        logs = logs.filter(data__lte=date_to)
+    if emp_id:
+        logs = logs.filter(employee__id=emp_id)
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="registros_ponto.csv"'
+    response.write('\ufeff')
+
+    writer = csv.writer(response)
+    writer.writerow(['Funcionário', 'ID', 'Tipo', 'Data', 'Horário', 'Confiança'])
+
+    for log in logs:
+        writer.writerow([
+            log.employee.name,
+            log.employee.emp_id,
+            log.tipo,
+            log.data.strftime('%d/%m/%Y'),
+            log.horario.strftime('%H:%M:%S'),
+            f"{log.confidence:.2f}",
+        ])
+
+    return response
 
 
 def reports(request):
     """Relatórios e análises."""
     
-    today = timezone.now().date()
+    today = timezone.localdate()
     month_start = today.replace(day=1)
     
     # Relatório do mês
     month_logs = TimeLog.objects.filter(
-        date__gte=month_start,
-        date__lte=today
+        data__gte=month_start,
+        data__lte=today
     ).select_related('employee')
     
     # Horas trabalhadas por funcionário
     employee_hours = {}
     for log in month_logs:
         emp_name = log.employee.name
-        hours = log.get_worked_hours()
-        if hours:
-            if emp_name not in employee_hours:
-                employee_hours[emp_name] = 0
-            employee_hours[emp_name] += hours
+        if emp_name not in employee_hours:
+            employee_hours[emp_name] = 0
     
     # Ordenar por horas
     employee_hours_sorted = sorted(
@@ -213,13 +241,13 @@ def reports(request):
     )
     
     # Dias com mais registros
-    days_count = month_logs.values('date').annotate(
+    days_count = month_logs.values('data').annotate(
         count=Count('id')
     ).order_by('-count')[:10]
     
     # Média de horas por dia
-    total_hours = sum(employee_hours.values())
-    working_days = month_logs.values('date').distinct().count()
+    total_hours = 0.0
+    working_days = month_logs.values('data').distinct().count()
     avg_hours_per_day = total_hours / working_days if working_days > 0 else 0
     
     context = {

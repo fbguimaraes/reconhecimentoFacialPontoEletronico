@@ -232,6 +232,13 @@ class FaceEngine:
         embedding = self.face_recognizer.feature(aligned_face)
         return embedding.flatten()
 
+    def detect_and_embed(self, frame_rgb):
+        """Detecta o primeiro rosto do frame e retorna seu embedding."""
+        faces = self.detect_faces(frame_rgb)
+        if not faces:
+            return None
+        return self.extract_embedding(faces[0], frame_rgb)
+
     # -------------------- API Calls --------------------
 
     def get_next_emp_id(self):
@@ -265,8 +272,7 @@ class FaceEngine:
             "emp_id": emp_id,
             "name": name,
             "embeddings": embeddings_list,
-            "department": department or "",
-            "position": position or ""
+            "department": department or ""
         }
         
         try:

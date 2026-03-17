@@ -72,10 +72,10 @@
                     <thead>
                         <tr>
                             <th>Funcionário</th>
+                            <th>Tipo</th>
                             <th>Data</th>
-                            <th>Entrada</th>
-                            <th>Saída</th>
-                            <th>Status</th>
+                            <th>Horário</th>
+                            <th>Confiança</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,22 +85,16 @@
                                 <strong>{{ log.employee.name }}</strong><br>
                                 <small class="text-muted">{{ log.employee.emp_id }}</small>
                             </td>
-                            <td>{{ log.date|date:"d/m/Y" }}</td>
-                            <td>{{ log.entry_time|time:"H:i" }}</td>
                             <td>
-                                {% if log.exit_time %}
-                                    {{ log.exit_time|time:"H:i" }}
+                                {% if log.tipo == 'entrada' %}
+                                    <span class="badge bg-warning badge-status">Entrada</span>
                                 {% else %}
-                                    <span class="text-muted">-</span>
+                                    <span class="badge bg-success badge-status">Saída</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if log.exit_time %}
-                                    <span class="badge bg-success badge-status">Completo</span>
-                                {% else %}
-                                    <span class="badge bg-warning badge-status">Pendente</span>
-                                {% endif %}
-                            </td>
+                            <td>{{ log.data|date:"d/m/Y" }}</td>
+                            <td>{{ log.horario|time:"H:i:s" }}</td>
+                            <td>{{ log.confidence|floatformat:3 }}</td>
                         </tr>
                         {% empty %}
                         <tr>

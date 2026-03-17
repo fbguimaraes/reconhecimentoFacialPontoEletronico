@@ -10,9 +10,9 @@ from .models import Employee, FaceEmbedding, TimeLog
 class EmployeeAdmin(admin.ModelAdmin):
     """Admin para funcionários."""
     
-    list_display = ['emp_id', 'name', 'department', 'position', 'is_active', 'created_at', 'status_tag']
+    list_display = ['emp_id', 'name', 'department', 'is_active', 'created_at', 'status_tag']
     list_filter = ['is_active', 'department', 'created_at']
-    search_fields = ['emp_id', 'name', 'department', 'position']
+    search_fields = ['emp_id', 'name', 'department']
     ordering = ['name']
     
     fieldsets = (
@@ -20,7 +20,7 @@ class EmployeeAdmin(admin.ModelAdmin):
             'fields': ('emp_id', 'name', 'is_active')
         }),
         ('Informações Profissionais', {
-            'fields': ('department', 'position')
+            'fields': ('department',)
         }),
         ('Metadata', {
             'fields': ('created_at',),
@@ -35,13 +35,13 @@ class EmployeeAdmin(admin.ModelAdmin):
         status = obj.get_today_status()
         colors = {
             'absent': 'gray',
-            'entered': 'orange',
-            'exited': 'green'
+            'entrada': 'orange',
+            'saida': 'green'
         }
         labels = {
             'absent': 'Ausente',
-            'entered': 'Presente',
-            'exited': 'Saiu'
+            'entrada': 'Presente',
+            'saida': 'Saiu'
         }
         color = colors.get(status, 'gray')
         label = labels.get(status, status)
@@ -92,48 +92,35 @@ class TimeLogAdmin(admin.ModelAdmin):
     """Admin para registros de ponto."""
     
     list_display = [
-        'employee', 'date', 'entry_time', 'exit_time', 
-        'worked_hours_display', 'status_tag'
+        'employee', 'tipo', 'data', 'horario', 'confidence', 'status_tag'
     ]
-    list_filter = ['date', 'employee']
+    list_filter = ['tipo', 'data', 'employee']
     search_fields = ['employee__name', 'employee__emp_id']
-    date_hierarchy = 'date'
-    ordering = ['-date', '-entry_time']
+    date_hierarchy = 'data'
+    ordering = ['-horario']
     
     fieldsets = (
         ('Funcionário', {
             'fields': ('employee',)
         }),
         ('Registro de Ponto', {
-            'fields': ('date', 'entry_time', 'exit_time')
-        }),
-        ('Confiança do Reconhecimento', {
-            'fields': ('entry_confidence', 'exit_confidence'),
-            'classes': ('collapse',)
+            'fields': ('tipo', 'horario', 'data', 'confidence')
         }),
         ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
+            'fields': ('created_at',),
             'classes': ('collapse',)
         }),
     )
     
-    readonly_fields = ['created_at', 'updated_at']
-    
-    def worked_hours_display(self, obj):
-        """Mostra horas trabalhadas."""
-        hours = obj.get_worked_hours()
-        if hours:
-            return f'{hours:.2f}h'
-        return '-'
-    worked_hours_display.short_description = 'Horas Trabalhadas'
+    readonly_fields = ['horario', 'created_at']
     
     def status_tag(self, obj):
         """Mostra status do registro."""
-        if obj.exit_time:
+        if obj.tipo == 'saida':
             return format_html(
-                '<span style="background-color: green; color: white; padding: 3px 10px; border-radius: 3px;">Completo</span>'
+                '<span style="background-color: green; color: white; padding: 3px 10px; border-radius: 3px;">Saída</span>'
             )
         return format_html(
-            '<span style="background-color: orange; color: white; padding: 3px 10px; border-radius: 3px;">Pendente</span>'
+            '<span style="background-color: orange; color: white; padding: 3px 10px; border-radius: 3px;">Entrada</span>'
         )
     status_tag.short_description = 'Status'

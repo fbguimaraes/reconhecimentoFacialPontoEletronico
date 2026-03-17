@@ -87,7 +87,7 @@
                     <tbody>
                         {% for day in days_count %}
                         <tr>
-                            <td>{{ day.date|date:"d/m/Y (D)" }}</td>
+                            <td>{{ day.data|date:"d/m/Y (D)" }}</td>
                             <td><strong>{{ day.count }}</strong></td>
                             <td>
                                 <div class="progress" style="height: 20px;">
@@ -107,23 +107,6 @@
                 </table>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Exportar Relatório -->
-<div class="card p-3">
-    <h5 class="card-title"><i class="bi bi-download"></i> Exportar Relatório</h5>
-    <p class="text-muted">Use a API para exportar dados em formato JSON</p>
-    <div class="d-flex gap-2">
-        <a href="/api/logs/?format=json" class="btn btn-outline-primary" target="_blank">
-            <i class="bi bi-file-earmark-code"></i> Exportar JSON
-        </a>
-        <a href="/api/employees/?format=json" class="btn btn-outline-success" target="_blank">
-            <i class="bi bi-people"></i> Funcionários JSON
-        </a>
-        <a href="/admin/" class="btn btn-outline-secondary" target="_blank">
-            <i class="bi bi-gear"></i> Admin Panel
-        </a>
     </div>
 </div>
 {% endblock %}

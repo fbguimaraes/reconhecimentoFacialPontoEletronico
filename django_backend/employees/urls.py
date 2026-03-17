@@ -14,6 +14,8 @@ urlpatterns = [
     
     # Endpoints de reconhecimento facial
     path('recognize/', views.recognize_face, name='recognize-face'),
+    path('recognize-image/', views.recognize_image, name='recognize-image'),
+    path('register-employee-image/', views.register_employee_image, name='register-employee-image'),
     path('register-employee/', views.register_employee, name='register-employee'),
     path('register-log/', views.register_log, name='register-log'),
     path('check-duplicate/', views.check_duplicate_face, name='check-duplicate'),

@@ -18,9 +18,6 @@
             {% if employee.department %}
             <p class="text-muted mb-0"><strong>Departamento:</strong> {{ employee.department }}</p>
             {% endif %}
-            {% if employee.position %}
-            <p class="text-muted mb-0"><strong>Cargo:</strong> {{ employee.position }}</p>
-            {% endif %}
             <p class="text-muted"><strong>Cadastrado em:</strong> {{ employee.created_at|date:"d/m/Y H:i" }}</p>
         </div>
     </div>
@@ -30,7 +27,7 @@
             <p class="h3">
                 {% if status == 'absent' %}
                     <span class="badge bg-secondary badge-status">Ausente</span>
-                {% elif status == 'entered' %}
+                {% elif status == 'entrada' %}
                     <span class="badge bg-warning badge-status">Presente</span>
                 {% else %}
                     <span class="badge bg-success badge-status">Saiu</span>
@@ -44,24 +41,26 @@
 <div class="row mb-4">
     <div class="col-md-4 mb-3">
         <div class="card stat-card primary">
-            <p class="stat-label">Total de Horas (Mês)</p>
-            <p class="stat-value text-primary">{{ total_hours }}h</p>
+            <p class="stat-label">Total de Registros (Mês)</p>
+            <p class="stat-value text-primary">{{ total_events }}</p>
         </div>
     </div>
     <div class="col-md-4 mb-3">
         <div class="card stat-card success">
-            <p class="stat-label">Dias Trabalhados (Mês)</p>
+            <p class="stat-label">Dias com Registro</p>
             <p class="stat-value text-success">{{ total_days }}</p>
         </div>
     </div>
     <div class="col-md-4 mb-3">
         <div class="card stat-card warning">
-            <p class="stat-label">Média de Horas/Dia</p>
+            <p class="stat-label">Status Atual</p>
             <p class="stat-value text-warning">
-                {% if total_days > 0 %}
-                    {{ total_hours|floatformat:1 }}h
+                {% if status == 'absent' %}
+                    Ausente
+                {% elif status == 'entrada' %}
+                    Entrada
                 {% else %}
-                    0h
+                    Saída
                 {% endif %}
             </p>
         </div>
@@ -87,43 +86,29 @@
                 <table class="table table-hover">
                     <thead class="table-light">
                         <tr>
+                            <th>Tipo</th>
                             <th>Data</th>
-                            <th>Entrada</th>
-                            <th>Saída</th>
-                            <th>Horas Trabalhadas</th>
-                            <th>Status</th>
+                            <th>Horário</th>
+                            <th>Confiança</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for log in month_logs %}
                         <tr>
-                            <td>{{ log.date|date:"d/m/Y (D)" }}</td>
-                            <td>{{ log.entry_time|time:"H:i" }}</td>
                             <td>
-                                {% if log.exit_time %}
-                                    {{ log.exit_time|time:"H:i" }}
+                                {% if log.tipo == 'entrada' %}
+                                    <span class="badge bg-warning badge-status">Entrada</span>
                                 {% else %}
-                                    <span class="text-muted">-</span>
+                                    <span class="badge bg-success badge-status">Saída</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if log.get_worked_hours %}
-                                    {{ log.get_worked_hours|floatformat:2 }}h
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if log.exit_time %}
-                                    <span class="badge bg-success badge-status">Completo</span>
-                                {% else %}
-                                    <span class="badge bg-warning badge-status">Pendente</span>
-                                {% endif %}
-                            </td>
+                            <td>{{ log.data|date:"d/m/Y (D)" }}</td>
+                            <td>{{ log.horario|time:"H:i:s" }}</td>
+                            <td>{{ log.confidence|floatformat:3 }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted">Nenhum registro no mês atual</td>
+                            <td colspan="4" class="text-center text-muted">Nenhum registro no mês atual</td>
                         </tr>
                         {% endfor %}
                     </tbody>
