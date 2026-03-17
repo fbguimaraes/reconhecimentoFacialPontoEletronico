@@ -1,9 +1,12 @@
-# Django Backend Requirements
-Django==4.2.11
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
-numpy==2.4.2
-Pillow==12.1.1
-
-# Para desenvolvimento
-python-dateutil==2.9.0
+Django>=4.2,<5.0
+djangorestframework>=3.14
+django-cors-headers>=4.0
+dj-database-url>=2.0
+psycopg2-binary>=2.9
+gunicorn>=21.0
+python-dotenv>=1.0
+whitenoise>=6.0
+numpy>=1.24
+opencv-contrib-python-headless>=4.8
+mediapipe>=0.10
+-c constraints.txt
