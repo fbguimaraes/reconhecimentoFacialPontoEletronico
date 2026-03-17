@@ -16,15 +16,27 @@ class ApiException implements Exception {
 }
 
 class ApiService {
+  static const Duration _timeout = Duration(seconds: 30);
+
   static Map<String, dynamic> _decodeBody(http.Response response) {
     if (response.body.trim().isEmpty) {
       return {};
     }
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {'data': decoded};
+    } catch (_) {
+      final preview = response.body.length > 200
+          ? '${response.body.substring(0, 200)}...'
+          : response.body;
+      return {
+        'error': 'Resposta não JSON do servidor',
+        'raw_response': preview,
+      };
     }
-    return {'data': decoded};
   }
 
   static Map<String, dynamic> _readErrorPayload(Map<String, dynamic> body) {
@@ -43,7 +55,7 @@ class ApiService {
     }
     final err = _readErrorPayload(body);
     throw ApiException(
-      err['message'] as String,
+      '${err['message']} (HTTP ${response.statusCode})',
       statusCode: response.statusCode,
       payload: {
         ...body,
@@ -53,14 +65,16 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> recognizeImage(String imageBase64) async {
-    final response = await http.post(
-      Uri.parse('${Config.apiBaseUrl}/recognize-image/'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'image_base64': imageBase64,
-        'threshold': Config.recognitionThreshold,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${Config.apiBaseUrl}/recognize-image/'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'image_base64': imageBase64,
+            'threshold': Config.recognitionThreshold,
+          }),
+        )
+        .timeout(_timeout);
     return _handleResponse(response);
   }
 
@@ -69,15 +83,17 @@ class ApiService {
     String tipo,
     double confidence,
   ) async {
-    final response = await http.post(
-      Uri.parse('${Config.apiBaseUrl}/register-log/'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'emp_id': empId,
-        'mode': tipo,
-        'confidence': confidence,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${Config.apiBaseUrl}/register-log/'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'emp_id': empId,
+            'mode': tipo,
+            'confidence': confidence,
+          }),
+        )
+        .timeout(_timeout);
     return _handleResponse(response);
   }
 
@@ -85,17 +101,19 @@ class ApiService {
     String name,
     String imageBase64,
   ) async {
-    final response = await http.post(
-      Uri.parse('${Config.apiBaseUrl}/register-employee-image/'),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Password': Config.adminPassword,
-      },
-      body: jsonEncode({
-        'name': name,
-        'image_base64': imageBase64,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${Config.apiBaseUrl}/register-employee-image/'),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Password': Config.adminPassword,
+          },
+          body: jsonEncode({
+            'name': name,
+            'image_base64': imageBase64,
+          }),
+        )
+        .timeout(_timeout);
     return _handleResponse(response);
   }
 }

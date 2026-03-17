@@ -13,7 +13,8 @@ class RecognitionScreen extends StatefulWidget {
   State<RecognitionScreen> createState() => _RecognitionScreenState();
 }
 
-class _RecognitionScreenState extends State<RecognitionScreen> {
+class _RecognitionScreenState extends State<RecognitionScreen>
+    with WidgetsBindingObserver {
   final FaceService _faceService = FaceService();
   CameraController? _controller;
   bool _loading = true;
@@ -23,7 +24,23 @@ class _RecognitionScreenState extends State<RecognitionScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initialize();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      controller.dispose();
+      _controller = null;
+    } else if (state == AppLifecycleState.resumed) {
+      _initialize();
+    }
   }
 
   Future<void> _initialize() async {
@@ -45,13 +62,30 @@ class _RecognitionScreenState extends State<RecognitionScreen> {
       return;
     }
 
-    _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
-    await _controller!.initialize();
+    final selected = _faceService.pickFrontOrFirstCamera(cameras);
+    if (selected == null) {
+      setState(() {
+        _status = 'Nenhuma câmera disponível.';
+        _loading = false;
+      });
+      return;
+    }
+
+    try {
+      _controller?.dispose();
+      _controller = CameraController(
+        selected,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await _controller!.initialize();
+    } catch (error) {
+      setState(() {
+        _status = 'Falha ao iniciar câmera: $error';
+        _loading = false;
+      });
+      return;
+    }
 
     if (!mounted) {
       return;
@@ -106,13 +140,18 @@ class _RecognitionScreenState extends State<RecognitionScreen> {
           similarity,
         );
 
+        if (!mounted) {
+          return;
+        }
+
         final now = TimeOfDay.now().format(context);
         _showSnack(
             '✅ ${widget.tipo == 'entrada' ? 'Entrada' : 'Saída'} registrada — ${employee['name']} — $now');
-        if (mounted) {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          Navigator.of(context).pop();
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (!mounted) {
+          return;
         }
+        Navigator.of(context).pop();
       } else {
         _showSnack('❌ Funcionário não reconhecido');
         setState(() {
@@ -140,6 +179,7 @@ class _RecognitionScreenState extends State<RecognitionScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     _faceService.dispose();
     super.dispose();

@@ -48,10 +48,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    final selectedCamera = _faceService.pickFrontOrFirstCamera(cameras);
+    if (selectedCamera == null) {
+      _showMessage('Nenhuma câmera disponível.');
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     final result = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => _RegisterCaptureScreen(
-          camera: cameras.first,
+          camera: selectedCamera,
           faceService: _faceService,
         ),
       ),
@@ -97,8 +107,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         _showMessage(error.message);
       }
-    } catch (_) {
-      _showMessage('Erro inesperado ao cadastrar funcionário.');
+    } catch (error) {
+      _showMessage('Erro inesperado: $error');
     } finally {
       if (mounted) {
         setState(() {
@@ -213,13 +223,23 @@ class _RegisterCaptureScreenState extends State<_RegisterCaptureScreen> {
   }
 
   Future<void> _initialize() async {
-    _controller = CameraController(
-      widget.camera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
-    await _controller!.initialize();
+    try {
+      _controller = CameraController(
+        widget.camera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await _controller!.initialize();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _status = 'Falha ao iniciar câmera: $error';
+      });
+      return;
+    }
     if (!mounted) {
       return;
     }

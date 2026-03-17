@@ -212,8 +212,17 @@ def recognize_image(request):
     except Exception as exc:
         return Response({'error': f'Imagem inválida: {str(exc)}'}, status=status.HTTP_400_BAD_REQUEST)
 
-    engine = get_engine()
-    embedding = engine.detect_and_embed(frame_rgb)
+    try:
+        engine = get_engine()
+        embedding = engine.detect_and_embed(frame_rgb)
+    except Exception as exc:
+        return Response(
+            {
+                'error': f'Falha no motor de reconhecimento: {str(exc)}',
+                'error_code': 'face_engine_error',
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     if embedding is None:
         return Response({'recognized': False, 'message': 'Nenhum rosto detectado'})
@@ -300,8 +309,17 @@ def register_employee_image(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    engine = get_engine()
-    embedding = engine.detect_and_embed(frame_rgb)
+    try:
+        engine = get_engine()
+        embedding = engine.detect_and_embed(frame_rgb)
+    except Exception as exc:
+        return Response(
+            {
+                'error': f'Falha no motor de reconhecimento: {str(exc)}',
+                'error_code': 'face_engine_error',
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     if embedding is None:
         return Response(

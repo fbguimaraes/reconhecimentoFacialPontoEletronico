@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
@@ -31,6 +30,18 @@ class FaceService {
 
   Future<List<CameraDescription>> loadCameras() {
     return availableCameras();
+  }
+
+  CameraDescription? pickFrontOrFirstCamera(List<CameraDescription> cameras) {
+    if (cameras.isEmpty) {
+      return null;
+    }
+    for (final camera in cameras) {
+      if (camera.lensDirection == CameraLensDirection.front) {
+        return camera;
+      }
+    }
+    return cameras.first;
   }
 
   Future<FaceCaptureResult> captureFaceBase64(XFile file) async {
