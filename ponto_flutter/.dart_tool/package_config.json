@@ -21,19 +21,19 @@
     },
     {
       "name": "camera",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/camera-0.10.6",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/camera-0.12.0",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.9"
     },
     {
-      "name": "camera_android",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/camera_android-0.10.10+15",
+      "name": "camera_android_camerax",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/camera_android_camerax-0.7.1",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
     {
       "name": "camera_avfoundation",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/camera_avfoundation-0.9.23+2",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/camera_avfoundation-0.10.1",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
@@ -129,15 +129,15 @@
     },
     {
       "name": "google_mlkit_commons",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/google_mlkit_commons-0.6.1",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/google_mlkit_commons-0.11.1",
       "packageUri": "lib/",
-      "languageVersion": "2.16"
+      "languageVersion": "3.8"
     },
     {
       "name": "google_mlkit_face_detection",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/google_mlkit_face_detection-0.9.0",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/google_mlkit_face_detection-0.13.2",
       "packageUri": "lib/",
-      "languageVersion": "2.16"
+      "languageVersion": "3.8"
     },
     {
       "name": "http",
@@ -225,13 +225,13 @@
     },
     {
       "name": "permission_handler",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/permission_handler-11.4.0",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/permission_handler-12.0.1",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
     {
       "name": "permission_handler_android",
-      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/permission_handler_android-12.1.0",
+      "rootUri": "file:///C:/Users/fbznn/AppData/Local/Pub/Cache/hosted/pub.dev/permission_handler_android-13.0.1",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
