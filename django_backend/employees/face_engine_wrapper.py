@@ -19,9 +19,12 @@ def get_engine():
     """Retorna uma instância singleton do motor facial do projeto."""
     global _engine_instance
     if _engine_instance is None:
-        project_root = _find_face_engine_root()
-        if project_root and project_root not in sys.path:
-            sys.path.insert(0, project_root)
-        from face_engine_api import FaceEngine
+        try:
+            from face_engine_api import FaceEngine
+        except ModuleNotFoundError:
+            project_root = _find_face_engine_root()
+            if project_root and project_root not in sys.path:
+                sys.path.insert(0, project_root)
+            from face_engine_api import FaceEngine
         _engine_instance = FaceEngine()
     return _engine_instance
