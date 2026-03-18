@@ -295,7 +295,6 @@ def reports(request):
     ).order_by('-count')[:10]
     
     # Média de horas por dia
-    total_hours = 0.0
     working_days = month_logs.values('data').distinct().count()
     avg_hours_per_day = total_hours / working_days if working_days > 0 else 0
     
