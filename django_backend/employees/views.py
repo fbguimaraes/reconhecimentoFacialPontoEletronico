@@ -85,11 +85,25 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         total_month_logs = month_logs.count()
         days_worked = month_logs.values('data').distinct().count()
         
+        # Calcular horas trabalhadas no mês
+        total_hours = 0.0
+        dates = month_logs.values_list('data', flat=True).distinct()
+        for date in dates:
+            day_logs = month_logs.filter(data=date).order_by('horario')
+            entradas = day_logs.filter(tipo='entrada')
+            saidas = day_logs.filter(tipo='saida')
+            if entradas.exists() and saidas.exists():
+                entrada_time = entradas.first().horario
+                saida_time = saidas.last().horario
+                if saida_time > entrada_time:
+                    delta = saida_time - entrada_time
+                    total_hours += delta.total_seconds() / 3600
+        
         return Response({
             'total_logs': total_logs,
             'total_month_logs': total_month_logs,
             'days_worked_month': days_worked,
-            'total_hours_month': 0.0,
+            'total_hours_month': round(total_hours, 2),
             'today_status': employee.get_today_status()
         })
 

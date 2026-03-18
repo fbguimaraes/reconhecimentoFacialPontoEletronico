@@ -90,13 +90,34 @@ def employees_list(request):
     # Adicionar informações de hoje para cada funcionário
     employees_data = []
     
+    now = timezone.now()
+    
     for emp in employees:
         status = emp.get_today_status()
+        
+        # Calcular horas trabalhadas no mês
+        month_logs = TimeLog.objects.filter(
+            employee=emp,
+            data__year=now.year,
+            data__month=now.month
+        )
+        total_hours = 0.0
+        dates = month_logs.values_list('data', flat=True).distinct()
+        for date in dates:
+            day_logs = month_logs.filter(data=date).order_by('horario')
+            entradas = day_logs.filter(tipo='entrada')
+            saidas = day_logs.filter(tipo='saida')
+            if entradas.exists() and saidas.exists():
+                entrada_time = entradas.first().horario
+                saida_time = saidas.last().horario
+                if saida_time > entrada_time:
+                    delta = saida_time - entrada_time
+                    total_hours += delta.total_seconds() / 3600
         
         employees_data.append({
             'employee': emp,
             'status': status,
-            'total_hours_month': 0.0
+            'total_hours_month': round(total_hours, 2)
         })
     
     context = {
@@ -139,12 +160,27 @@ def employee_detail(request, pk):
             'present': 1 if has_log else 0
         })
     
+    # Calcular horas trabalhadas no mês
+    total_hours = 0.0
+    dates = month_logs.values_list('data', flat=True).distinct()
+    for date in dates:
+        day_logs = month_logs.filter(data=date).order_by('horario')
+        entradas = day_logs.filter(tipo='entrada')
+        saidas = day_logs.filter(tipo='saida')
+        if entradas.exists() and saidas.exists():
+            entrada_time = entradas.first().horario
+            saida_time = saidas.last().horario
+            if saida_time > entrada_time:
+                delta = saida_time - entrada_time
+                total_hours += delta.total_seconds() / 3600
+    
     context = {
         'employee': employee,
         'status': employee.get_today_status(),
         'month_logs': month_logs,
         'total_events': month_logs.count(),
         'total_days': month_logs.values('data').distinct().count(),
+        'total_hours_month': round(total_hours, 2),
         'presence_data': presence_data,
     }
     
@@ -228,10 +264,23 @@ def reports(request):
     
     # Horas trabalhadas por funcionário
     employee_hours = {}
-    for log in month_logs:
-        emp_name = log.employee.name
-        if emp_name not in employee_hours:
-            employee_hours[emp_name] = 0
+    total_hours = 0.0
+    for emp in Employee.objects.filter(is_active=True):
+        emp_month_logs = month_logs.filter(employee=emp)
+        emp_total_hours = 0.0
+        dates = emp_month_logs.values_list('data', flat=True).distinct()
+        for date in dates:
+            day_logs = emp_month_logs.filter(data=date).order_by('horario')
+            entradas = day_logs.filter(tipo='entrada')
+            saidas = day_logs.filter(tipo='saida')
+            if entradas.exists() and saidas.exists():
+                entrada_time = entradas.first().horario
+                saida_time = saidas.last().horario
+                if saida_time > entrada_time:
+                    delta = saida_time - entrada_time
+                    emp_total_hours += delta.total_seconds() / 3600
+        employee_hours[emp.name] = emp_total_hours
+        total_hours += emp_total_hours
     
     # Ordenar por horas
     employee_hours_sorted = sorted(
